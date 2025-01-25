@@ -5,12 +5,15 @@ data:
   dataset_folder: 
 
 model:
-  name: UNet
-  num_classes: 1
-  smp_encoder: resnet50
+  name: ViT
+  num_classes: 8
+  smp_encoder: timm/vit_base_patch16_224 
+  pretrained: True  
+  freeze_backbone: False  # Optional fine-tuning strategy
 
 loss:
-  name: GeneralizedDiceLoss
+  name: CrossEntropyLoss  
+  label_smoothing: 0.1  # Optional smoothing for better generalization
 
 experiment:
   name: PBC Classification
