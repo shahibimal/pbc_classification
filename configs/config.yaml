@@ -1,0 +1,30 @@
+project:
+  name: PBC Classification Project
+data:
+  data_dir: data
+  dataset_folder: 
+
+model:
+  name: UNet
+  num_classes: 1
+  smp_encoder: resnet50
+
+loss:
+  name: GeneralizedDiceLoss
+
+experiment:
+  name: PBC Classification
+  num_epochs: 100
+  patience: 20
+  image_size: 256
+  batch_size: 8
+  learning_rate: 0.001
+  split_ratio: 0.2
+  num_workers: 8
+  accelerator: cuda # cpu, cuda, or mps
+  devices: auto
+  random_seed: 42
+
+  use_scheduler: True
+  use_checkpointing: True
+  log_artifacts: True
