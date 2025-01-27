@@ -1,6 +1,7 @@
 torch
 scikit-learn
 timm
+tqdm
 python-decouple
 mlflow
 wandb==0.15.8
