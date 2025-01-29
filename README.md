@@ -53,11 +53,11 @@ python train.py --model_name <model_name> --batch_size <batch_size> --epochs <ep
 
 Replace the placeholders with appropriate values:
 
-`<model_name>`: The model you wish to train (e.g., vit_base_patch16_224, BloodNetViT, etc.).
-`<batch_size>`: The batch size for training (default is 32).
-`<epochs>`: The number of epochs for training (default is 100).
-`<learning_rate>`: The learning rate (default is 2e-4).
-`--use_scheduler`: Use this flag to enable a learning rate scheduler (optional).
+- `<model_name>`: The model you wish to train (e.g., vit_base_patch16_224, BloodNetViT, etc.).
+- `<batch_size>`: The batch size for training (default is 32).
+- `<epochs>`: The number of epochs for training (default is 100).
+- `<learning_rate>`: The learning rate (default is 2e-4).
+- `--use_scheduler`: Use this flag to enable a learning rate scheduler (optional).
 
 Example to train the `BloodNetViT` model:
 ```bash
@@ -68,16 +68,16 @@ Available models with their keys in the factory are:
 
 #### ViT (Vision Transformer) Models:
 
-vit_base_patch16_224`
-`vit_small_patch16_224`
-`vit_base_patch32_224`
-`vit_large_patch16_224`
-`vit_large_patch32_224`
-`vit_tiny_patch16_224`
+- `vit_base_patch16_224`
+- `vit_small_patch16_224`
+- `vit_base_patch32_224`
+- `vit_large_patch16_224`
+- `vit_large_patch32_224`
+- `vit_tiny_patch16_224`
 
 #### Custom Model:
 
-`BloodNetViT`
+- `BloodNetViT`
 
 ### Project Structure
 
