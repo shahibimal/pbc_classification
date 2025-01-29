@@ -1,20 +1,30 @@
 from torch import nn
-from timm import create_model
+from timm.models._factory import create_model
+from .BloodNetViT import ViT
 
 # Define the model mapping for timm models 
 model_mapping = {
     "vit_base_patch16_224":{
-        "family": "vit",
-        "pretrained": True,
-    },
-    "vit_large_patch32_384":{
-        "family": "vit",
-        "pretrained": True,
-    },
+        "family": "vit"
+        },
     "vit_small_patch16_224": {
-        "family": "vit",
-        "pretrained": True,
-    },
+        "family": "vit"
+        },
+    "vit_base_patch32_224": {
+        "family": "vit"
+        },
+    "vit_large_patch16_224": {
+        "family": "vit"
+        },
+    "vit_large_patch32_224": {
+        "family": "vit"
+        },
+    "vit_tiny_patch16_224": {
+        "family": "vit"
+        },
+    "BloodNetViT":{
+        "family": "vit"
+        },
     # Add more models as needed with their respective configurations.
 }
 
@@ -37,10 +47,13 @@ class Model(nn.Module):
                 f"Invalid model name: '{model_name}'. Available options: {valid_options}"
             )
 
-        model_config = model_mapping[model_name]
-        self.model = create_model(
-            model_name, pretrained=model_config["pretrained"], num_classes=num_classes
-        )
+        # If BloodNetViT is selected, use it specifically, otherwise use timm model
+        if model_name == "BloodNetViT":
+            self.model = ViT(num_classes=num_classes)  
+        else:
+            self.model = create_model(
+                model_name, pretrained=True, num_classes=num_classes
+            )
 
         # Freeze model parameters except the classifier head
         for param in self.model.parameters():

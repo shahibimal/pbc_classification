@@ -13,4 +13,4 @@ dataset:
 
 # Run the main script
 run:
-	@python main.py
+	@python train.py

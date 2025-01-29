@@ -3,7 +3,7 @@ import torch
 import numpy as np
 
 class EarlyStopping:
-    def __init__(self, patience=5, delta=0, verbose=False, save_dir='artifacts', model_name='best_model.pth'):
+    def __init__(self, patience=5, delta=0.0, verbose=False, save_dir='artifacts', model_name='best_model.pth'):
         """
         Early stopping to stop training if validation loss doesn't improve.
         
