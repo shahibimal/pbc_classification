@@ -56,7 +56,7 @@ Replace the placeholders with appropriate values:
 - `<model_name>`: The model you wish to train (e.g., vit_base_patch16_224, BloodNetViT, etc.).
 - `<batch_size>`: The batch size for training (default is 32).
 - `<epochs>`: The number of epochs for training (default is 100).
-- `<learning_rate>`: The learning rate (default is 2e-4).
+- `<learning_rate>`: The learning rate (default is 2e-5).
 - `--use_scheduler`: Use this flag to enable a learning rate scheduler (optional).
 
 Example to train the `BloodNetViT` model:

@@ -16,6 +16,11 @@ from src.dataset import create_dataloaders
 def get_timestamp():
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+# Generate a unique training run ID based on date and time
+training_run_id = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+run_dir = f'artifacts/run_{training_run_id}'
+os.makedirs(run_dir, exist_ok=True)
+
 
 # Set random seed for reproducibility
 def set_seed(seed: int):
@@ -32,17 +37,29 @@ def set_seed(seed: int):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+# Function to save the checkpoints 
+def save_checkpoint(model, optimizer, epoch, loss, filename):
+    checkpoint = {
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'loss': loss
+    }
+    torch.save(checkpoint, filename)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a classification model.")
+    parser.add_argument("--dataset_dir", type=str, default='../data/PBC_dataset_normal_DIB_224/PBC_dataset_normal_DIB_224', help="Dataset directory path")
     parser.add_argument("--model_name", type=str, default='vit_base_patch16_224', help="Name of the model.")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training.")
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs.")
-    parser.add_argument("--lr", type=float, default=2e-4, help="Learning rate.")
+    parser.add_argument("--lr", type=float, default=2e-5, help="Learning rate.")
     parser.add_argument("--use_scheduler", action='store_true', help="Use learning rate scheduler.")
     return parser.parse_args()
 
 class ClassificationModel:
-    def __init__(self, model_name, num_classes, lr=2e-4, use_scheduler=True, device='cuda'):
+    def __init__(self, model_name, num_classes, lr=2e-5, use_scheduler=True, device='cuda'):
         self.device = device
         self.model = ModelFactory(model_name, num_classes)().to(self.device)
         self.loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
@@ -64,7 +81,7 @@ class ClassificationModel:
             f.write(f"{timestamp} - {message}\n")
         print(f"{timestamp} - {message}")  
 
-    def train(self, train_loader, val_loader, epochs, early_stopping_patience=5, early_stopping_delta=0.001):
+    def train(self, train_loader, val_loader, epochs, early_stopping_patience=5, early_stopping_delta=0.001, grad_clip_value=1.0, checkpoint_interval=5):
         early_stopping = EarlyStopping(patience=early_stopping_patience, delta=early_stopping_delta, verbose=True)
         self._log(f"Training started with learning rate = {self.optimizer.param_groups[0]['lr']}")
 
@@ -80,6 +97,11 @@ class ClassificationModel:
                 outputs = self.model(inputs)
                 loss = self.loss_fn(outputs, labels)
                 loss.backward()
+
+                # Gradient clipping 
+                if grad_clip_value:
+                    nn.utils.clip_grad_norm_(self.model.parameters(), grad_clip_value)
+
                 self.optimizer.step()
 
                 running_loss += loss.item() * inputs.size(0)
@@ -91,6 +113,12 @@ class ClassificationModel:
                 if (batch_idx + 1) % (len(train_loader) // 20 + 1) == 0 or batch_idx == len(train_loader) - 1:
                     self._log(f"Training: {progress}% | Loss: {running_loss / total:.4f} | Acc: {correct / total:.4f}")
             
+            # Save checkpoint at regular intervals
+            if (epoch + 1) % checkpoint_interval == 0:
+                checkpoint_filename = os.path.join(run_dir, f"checkpoint_epoch_{epoch + 1}.pth")
+                save_checkpoint(self.model, self.optimizer, epoch, running_loss / total, checkpoint_filename)
+                self._log(f"Checkpoint saved at epoch {epoch + 1} in {checkpoint_filename}")
+
             val_loss, val_acc, val_metrics = self.validate(val_loader)
             self._log(f"Validation | Loss: {val_loss:.4f} | Acc: {val_acc:.4f} | Precision: {val_metrics[0]:.4f} | Recall: {val_metrics[1]:.4f} | F1: {val_metrics[2]:.4f}")
 
@@ -139,10 +167,8 @@ if __name__ == "__main__":
     set_seed(42)
 
     args = parse_args()
-    dataset_dir = '../data/PBC_dataset_normal_DIB_224/PBC_dataset_normal_DIB_224'
-    train_loader, val_loader, test_loader, _, _, _ = create_dataloaders(dataset_dir, batch_size=args.batch_size)
+    train_loader, val_loader, test_loader, _, _, _ = create_dataloaders(dataset_dir=args.dataset_dir, batch_size=args.batch_size)
     model = ClassificationModel(args.model_name, num_classes=8, lr=args.lr, use_scheduler=args.use_scheduler)
     model.train(train_loader, val_loader, args.epochs)
-    test_loss, test_acc, test_metrics = model.validate(test_loader)
-    print(f"Test | Loss: {test_loss:.4f} | Acc: {test_acc:.4f} | Precision: {test_metrics[0]:.4f} | Recall: {test_metrics[1]:.4f} | F1: {test_metrics[2]:.4f}")
+    
 
