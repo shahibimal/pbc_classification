@@ -62,7 +62,7 @@ class Evaluator:
         sensitivity, specificity = calculate_sensitivity_specivity(all_labels, all_preds, len(set(all_labels)))
 
         print(f"Test Results | Loss: {test_loss:.4f} | Acc: {test_acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f}")
-        print(f"Sensitivity: {sensitivity:.4f} | Specificity: {specificity:.4f}")
+        print(f"Sensitivity: {sensitivity} | Specificity: {specificity}")
 
 
 if __name__ == "__main__":
