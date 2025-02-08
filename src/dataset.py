@@ -1,9 +1,10 @@
 import os
-from torch.utils.data import DataLoader, Dataset, Subset
+import torch
+from torch.utils.data import DataLoader, Dataset, Subset, WeightedRandomSampler
 from torchvision import datasets, transforms
 import numpy as np
 from sklearn.model_selection import train_test_split
-from .utils import print_label_distribution
+from utils import print_label_distribution
 
 # Get the number of CPU cores available
 num_workers = os.cpu_count()
@@ -62,13 +63,27 @@ class FilteredDataset(Dataset):
         label = self.targets[idx]
         return image, label
 
+class TransformSubset(Dataset):
+    def __init__(self, subset, transform=None):
+        self.subset = subset
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.subset)
+
+    def __getitem__(self, idx):
+        image, label = self.subset[idx]
+        if self.transform:
+            image = self.transform(image)
+        return image, label
+
 # Function to create dataset and dataloaders
 def create_dataloaders(dataset_dir, batch_size=16, num_workers=4):
     if not os.path.exists(dataset_dir):
         raise FileNotFoundError(f"Dataset directory '{dataset_dir}' not found.")
 
     # Load dataset
-    full_dataset = datasets.ImageFolder(dataset_dir, transform=transform['train'])
+    full_dataset = datasets.ImageFolder(dataset_dir)
 
     # Filter dataset
     filtered_dataset = FilteredDataset(full_dataset, class_names)
@@ -93,15 +108,40 @@ def create_dataloaders(dataset_dir, batch_size=16, num_workers=4):
         random_state=42
     )
 
+    # ===== Add Class Weighted Sampler for Training =====
+    # Compute sample weights for the training set based on class frequencies.
+    train_targets = np.array(filtered_dataset.targets)[train_idx]
+    unique_classes, class_counts = np.unique(train_targets, return_counts=True)
+
+    # Inverse frequency for each class
+    class_weights = {cls: 1.0 / count for cls, count in zip(unique_classes, class_counts)}
+
+    # Create a weight for each sample in the training set
+    sample_weights = np.array([class_weights[t] for t in train_targets])
+
+    # Convert the sample_weights array to a torch tensor and then to a list
+    sample_weights = torch.DoubleTensor(sample_weights).tolist()
+
+    # Create the sampler; set replacement=True so that the sampling can pick
+    # minority classes more often if necessary.
+    train_sampler = WeightedRandomSampler(
+        weights=sample_weights, 
+        num_samples=len(sample_weights), 
+        replacement=True
+    )
+    # ===================================================
+
     # Create subsets
-    train_dataset = Subset(filtered_dataset, train_idx)
-    val_dataset = Subset(filtered_dataset, val_idx)
-    test_dataset = Subset(filtered_dataset, test_idx)
+    train_dataset = TransformSubset(Subset(filtered_dataset, train_idx), transform=transform['train'])
+    val_dataset = TransformSubset(Subset(filtered_dataset, val_idx), transform=transform['val'])
+    test_dataset = TransformSubset(Subset(filtered_dataset, test_idx), transform=transform['test'])
 
     # Create DataLoaders
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    # When using a sampler (e.g., WeightedRandomSampler), do not specify shuffle=True.
+# The sampler determines the order of samples, so setting shuffle is redundant and causes a conflict.
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=num_workers)
 
     return train_loader, val_loader, test_loader, train_dataset, val_dataset, test_dataset
 
