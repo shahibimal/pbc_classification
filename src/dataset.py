@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader, Dataset, Subset, WeightedRandomSampler
 from torchvision import datasets, transforms
 import numpy as np
 from sklearn.model_selection import train_test_split
-from utils import print_label_distribution
+from .utils import print_label_distribution
 
 # Get the number of CPU cores available
 num_workers = os.cpu_count()
